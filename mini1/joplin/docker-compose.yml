@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+
+  postgresql:
+    image: postgres:16-alpine
+    container_name: joplin-postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - joplin
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+
+  joplin:
+
+    depends_on:
+      - postgresql
+    image: joplin/server:latest
+    container_name: joplin
+    restart: unless-stopped
+    environment:
+      APP_PORT: ${APP_PORT}
+      APP_BASE_URL: ${APP_BASE_URL}
+      DB_CLIENT: ${DB_CLIENT}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SAML_ENABLED: true
+      SAML_IDP_CONFIG_FILE: /opt/joplin/config/joplin-idp.xml
+      SAML_SP_CONFIG_FILE: /opt/joplin/config/joplin-sp.xml
+      API_BASE_URL: ${APP_BASE_URL}
+      DELETE_EXPIRED_SESSIONS_SCHEDULE: ""
+      # Optional: Disable local authentication to require SAML login
+      LOCAL_AUTH_ENABLED: false
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    networks:
+      - backend
+      - joplin
+    volumes:
+    - ./joplin-sp.xml:/opt/joplin/config/joplin-sp.xml
+    - ./joplin-idp.xml:/opt/joplin/config/joplin-idp.xml
+volumes:
+  postgres:
+
+networks:
+  backend:
+    external: true
+  joplin:
+    driver: bridge
+
